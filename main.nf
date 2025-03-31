@@ -28,18 +28,26 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_pack
 workflow MARSHOMICS_PACK {
 
     take:
-    samplesheet // channel: samplesheet read in from --input
+    genomes
 
     main:
-
-    //
-    // WORKFLOW: Run pipeline
-    //
     PACK (
-        samplesheet
+        genomes
     )
-    emit:
-    multiqc_report = PACK.out.multiqc_report // channel: /path/to/multiqc_report.html
+
+    // take:
+    // samplesheet // channel: samplesheet read in from --input
+
+    // main:
+
+    // //
+    // // WORKFLOW: Run pipeline
+    // //
+    // PACK (
+    //     samplesheet
+    // )
+    // emit:
+    // multiqc_report = PACK.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,21 +61,27 @@ workflow {
     //
     // SUBWORKFLOW: Run initialisation tasks
     //
-    PIPELINE_INITIALISATION (
-        params.version,
-        params.validate_params,
-        params.monochrome_logs,
-        args,
-        params.outdir,
-        params.input
-    )
+    // PIPELINE_INITIALISATION (
+    //     params.version,
+    //     params.validate_params,
+    //     params.monochrome_logs,
+    //     args,
+    //     params.outdir,
+    //     params.input
+    // )
+    if (!params.input) {
+        exit 1, "❌ Please provide --input as a directory of genome FASTA files."
+    }
 
+    PACK (
+        Channel.fromPath("${params.input}/*.{fa,fna,fasta,fa.gz,fna.gz,fasta.gz}", checkIfExists: true)
+    )
     //
     // WORKFLOW: Run main workflow
     //
-    MARSHOMICS_PACK (
-        PIPELINE_INITIALISATION.out.samplesheet
-    )
+    // LEYLAB_PACK (
+    //     PIPELINE_INITIALISATION.out.samplesheet
+    // )
     //
     // SUBWORKFLOW: Run completion tasks
     //
@@ -77,8 +91,8 @@ workflow {
         params.plaintext_email,
         params.outdir,
         params.monochrome_logs,
-        params.hook_url,
-        MARSHOMICS_PACK.out.multiqc_report
+        params.hook_url
+        // LEYLAB_PACK.out.multiqc_report
     )
 }
 

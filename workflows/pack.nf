@@ -5,6 +5,8 @@
 */
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
+include { CHECKM2_DATABASEDOWNLOAD } from '../modules/nf-core/checkm2/databasedownload/main'
+include { CHECKM2_PREDICT } from '../modules/nf-core/checkm2/predict/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
