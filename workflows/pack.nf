@@ -33,9 +33,10 @@ workflow PACK {
     ch_versions = ch_versions.mix(CHECKM2_DATABASEDOWNLOAD.out.versions)
 
     ch_wrapped_genomes = genomes.map { file ->
-        def id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
-        return [ id, file ]
+        def sample_id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
+        return [ [ id: sample_id ], file ]
     }
+    ch_wrapped_genomes.view()
     // Step 2: Run CheckM2 predict
     CHECKM2_PREDICT(
         ch_wrapped_genomes,

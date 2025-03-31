@@ -73,7 +73,7 @@ workflow {
         exit 1, "❌ Please provide --input as a directory of genome FASTA files."
     }
 
-    PACK (
+    MARSHOMICS_PACK (
         Channel.fromPath("${params.input}/*.{fa,fna,fasta,fa.gz,fna.gz,fasta.gz}", checkIfExists: true)
     )
     //
