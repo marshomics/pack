@@ -199,5 +199,12 @@
         {
             "$ref": "#/$defs/generic_options"
         }
-    ]
+    ],
+    "properties": {
+        "checkm2_zenodo_id": {
+            "type": "integer",
+            "default": 14897628,
+            "description": "Zenodo ID for the CheckM2 database"
+        }
+    }
 }
