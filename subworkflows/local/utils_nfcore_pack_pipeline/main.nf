@@ -98,6 +98,36 @@ workflow PIPELINE_INITIALISATION {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+
+workflow GENOMECOLLECTOR {
+
+    take:
+    genome_files
+
+    main:
+
+    // Optional: View input genome files for debugging
+    // genome_files.view()
+
+    ch_wrapped_genomes = genome_files.map { file ->
+        def id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
+        tuple([ id: id ], file)
+    }
+
+    // ch_versions = Channel.of(
+    //     """
+    //     GENOMECOLLECTOR:
+    //       status: completed
+    //       input_count: ${genome_files.count().getVal()}
+    //     """.stripIndent()
+    // )
+
+    emit:
+    wrapped_genomes = ch_wrapped_genomes
+    // versions        = ch_versions
+}
+
+
 workflow PIPELINE_COMPLETION {
 
     take:

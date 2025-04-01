@@ -11,6 +11,7 @@ include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_pack_pipeline'
+include { GENOMECOLLECTOR } from '../subworkflows/local/utils_nfcore_pack_pipeline'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,14 +33,19 @@ workflow PACK {
     ch_checkm2_db = CHECKM2_DATABASEDOWNLOAD.out.database
     ch_versions = ch_versions.mix(CHECKM2_DATABASEDOWNLOAD.out.versions)
 
-    ch_wrapped_genomes = genomes.map { file ->
-        def sample_id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
-        return [ [ id: sample_id ], file ]
-    }
-    ch_wrapped_genomes.view()
+    // genomes.view()
+    GENOMECOLLECTOR(
+         genomes
+        )
+    
+    // ch_wrapped_genomes = genomes.map { file ->
+    //     def sample_id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
+    //     return [ [ id: sample_id ], file ]
+    // }
+    // ch_wrapped_genomes.view()
     // Step 2: Run CheckM2 predict
     CHECKM2_PREDICT(
-        ch_wrapped_genomes,
+        GENOMECOLLECTOR.out.wrapped_genomes,
         ch_checkm2_db
     )
     ch_versions = ch_versions.mix(CHECKM2_PREDICT.out.versions)
