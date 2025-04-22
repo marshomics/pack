@@ -5,13 +5,12 @@
 */
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
-include { CHECKM2_DATABASEDOWNLOAD } from '../modules/nf-core/checkm2/databasedownload/main'
-include { CHECKM2_PREDICT } from '../modules/nf-core/checkm2/predict/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_pack_pipeline'
-include { GENOMECOLLECTOR } from '../subworkflows/local/utils_nfcore_pack_pipeline'
+include { QUALITY_CHECK_BY_CHECKM2 } from '../subworkflows/local/quality_check_by_checkm2'
+
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,16 +26,26 @@ workflow PACK {
 
     // Track versions
     ch_versions = Channel.empty()
+    // Run a subworkflow that:
+    // - Downloads CheckM2 DB (once)
+    // - Collects genome files into a merged input
+    // - Runs CheckM2 on all genomes together
+    QUALITY_CHECK_BY_CHECKM2(
+        genomes,
+        params.checkm2_zenodo_id
+    )
 
-    // Step 1: Download CheckM2 database
-    CHECKM2_DATABASEDOWNLOAD(params.checkm2_zenodo_id)
-    ch_checkm2_db = CHECKM2_DATABASEDOWNLOAD.out.database
-    ch_versions = ch_versions.mix(CHECKM2_DATABASEDOWNLOAD.out.versions)
-
+    // Merge version info from CheckM2-related processes
+    ch_versions = ch_versions.mix(QUALITY_CHECK_BY_CHECKM2.out.versions)
+    // // Step 1: Download CheckM2 database
+    // CHECKM2_DATABASEDOWNLOAD(params.checkm2_zenodo_id)
+    // ch_checkm2_db = CHECKM2_DATABASEDOWNLOAD.out.database
+    // ch_versions = ch_versions.mix(CHECKM2_DATABASEDOWNLOAD.out.versions)
+    // ch_versions.view()
     // genomes.view()
-    GENOMECOLLECTOR(
-         genomes
-        )
+    // GENOMECOLLECTOR(
+    //      genomes
+    //     )
     
     // ch_wrapped_genomes = genomes.map { file ->
     //     def sample_id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
@@ -44,11 +53,12 @@ workflow PACK {
     // }
     // ch_wrapped_genomes.view()
     // Step 2: Run CheckM2 predict
-    CHECKM2_PREDICT(
-        GENOMECOLLECTOR.out.wrapped_genomes,
-        ch_checkm2_db
-    )
-    ch_versions = ch_versions.mix(CHECKM2_PREDICT.out.versions)
+    // CHECKM2_PREDICT(
+    //     // GENOMECOLLECTOR.out.wrapped_genomes,
+    //     GENOMECOLLECTOR.out.merged_genomes,        
+    //     ch_checkm2_db
+    // )
+    // ch_versions = ch_versions.mix(CHECKM2_PREDICT.out.versions)
 
     // Save software versions to YAML
     softwareVersionsToYAML(ch_versions)

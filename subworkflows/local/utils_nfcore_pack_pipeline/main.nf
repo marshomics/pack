@@ -109,11 +109,16 @@ workflow GENOMECOLLECTOR {
     // Optional: View input genome files for debugging
     // genome_files.view()
 
-    ch_wrapped_genomes = genome_files.map { file ->
-        def id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
-        tuple([ id: id ], file)
-    }
-
+    // ch_wrapped_genomes = genome_files.map { file ->
+    //     def id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
+    //     tuple([ id: id ], file)
+    // }
+    ch_merged = genome_files
+        .collect()  // collect all genome paths into a list
+        .map { paths ->
+            def meta = [ id: 'all_genomes' ]
+            tuple(meta, paths)
+        }
     // ch_versions = Channel.of(
     //     """
     //     GENOMECOLLECTOR:
@@ -123,7 +128,8 @@ workflow GENOMECOLLECTOR {
     // )
 
     emit:
-    wrapped_genomes = ch_wrapped_genomes
+    // wrapped_genomes = ch_wrapped_genomes
+    merged_genomes = ch_merged
     // versions        = ch_versions
 }
 
