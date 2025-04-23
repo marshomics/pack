@@ -32,11 +32,11 @@ workflow QUALITY_CHECK_BY_CHECKM2 {
     ch_versions   = CHECKM2_DATABASEDOWNLOAD.out.versions
 
     // STEP 2: Collect all genome files into one merged list with shared metadata
-    GENOMECOLLECTOR(genomes)
+    GENOMECOLLECTOR(genomes,"merged")
 
     // STEP 3: Run CheckM2 predict using all merged genomes
     CHECKM2_PREDICT(
-        GENOMECOLLECTOR.out.merged_genomes,
+        GENOMECOLLECTOR.out.genomes_formatted_for_input,
         ch_checkm2_db
     )
 

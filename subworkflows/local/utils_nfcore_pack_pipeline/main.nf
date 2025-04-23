@@ -102,10 +102,29 @@ workflow PIPELINE_INITIALISATION {
 workflow GENOMECOLLECTOR {
 
     take:
-    genome_files
+    genome_files  // List of genome file paths from input directory
+    mode          // String: 'wrapped' or 'merged'
 
     main:
 
+    // Dynamically construct the output channel based on the given mode.
+     def ch_output
+
+    if (mode == 'wrapped') {
+        // WRAPPED MODE: one tuple per genome → for per-genome tools like Prokka
+        ch_output = genome_files.map { file ->
+            def id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
+            tuple([ id: id ], file)
+        }
+    } else {
+        // MERGED MODE: one tuple with all genome paths → for CheckM2
+        ch_output = genome_files
+            .collect()
+            .map { paths ->
+                def meta = [ id: 'all_genomes' ]
+                tuple(meta, paths)
+            }
+    }
     // Optional: View input genome files for debugging
     // genome_files.view()
 
@@ -113,12 +132,12 @@ workflow GENOMECOLLECTOR {
     //     def id = file.getBaseName().replaceAll(/\.(fna|fa|fasta)(\.gz)?$/, "")
     //     tuple([ id: id ], file)
     // }
-    ch_merged = genome_files
-        .collect()  // collect all genome paths into a list
-        .map { paths ->
-            def meta = [ id: 'all_genomes' ]
-            tuple(meta, paths)
-        }
+    // ch_merged = genome_files
+    //     .collect()  // collect all genome paths into a list
+    //     .map { paths ->
+    //         def meta = [ id: 'all_genomes' ]
+    //         tuple(meta, paths)
+    //     }
     // ch_versions = Channel.of(
     //     """
     //     GENOMECOLLECTOR:
@@ -129,8 +148,9 @@ workflow GENOMECOLLECTOR {
 
     emit:
     // wrapped_genomes = ch_wrapped_genomes
-    merged_genomes = ch_merged
+    // merged_genomes = ch_merged
     // versions        = ch_versions
+    genomes_formatted_for_input = ch_output
 }
 
 
