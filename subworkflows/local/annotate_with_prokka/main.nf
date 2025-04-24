@@ -4,33 +4,43 @@
 //               https://nf-co.re/join
 // TODO nf-core: A subworkflow SHOULD import at least two modules
 
-include { SAMTOOLS_SORT      } from '../../../modules/nf-core/prokka'
-include { SAMTOOLS_INDEX     } from '../../../modules/nf-core/samtools/index/main'
+include { PROKKA          } from '../../../modules/nf-core/prokka'
+include { GENOMECOLLECTOR } from '../../local/utils_nfcore_pack_pipeline'
+
+/*
+========================================================================================
+  ANNOTATE_WITH_PROKKA
+  - Subworkflow to run genome annotation using Prokka
+  - Takes individual genome FASTA files with metadata (wrapped_genomes)
+  - Optionally accepts:
+      - a protein FASTA file to use for annotation (--proteins)
+      - a Prodigal translation table file (--prodigaltf)
+  - Emits selected Prokka output files and version information
+========================================================================================
+*/
 
 workflow ANNOTATE_WITH_PROKKA {
 
     take:
-    // TODO nf-core: edit input (take) channels
-    ch_bam // channel: [ val(meta), [ bam ] ]
+    genomes  // Channel of tuples: [meta, fasta] → one per genome
+    proteins         // Optional protein FASTA (for reference annotation)
+    prodigal_tf      // Optional Prodigal translation table
 
     main:
+    // Run the PROKKA module with all provided inputs
 
-    ch_versions = Channel.empty()
-
-    // TODO nf-core: substitute modules here for the modules of your subworkflow
-
-    SAMTOOLS_SORT ( ch_bam )
-    ch_versions = ch_versions.mix(SAMTOOLS_SORT.out.versions.first())
-
-    SAMTOOLS_INDEX ( SAMTOOLS_SORT.out.bam )
-    ch_versions = ch_versions.mix(SAMTOOLS_INDEX.out.versions.first())
+    // STEP 2: Collect all genome files into one merged list with shared metadata
+    GENOMECOLLECTOR(genomes,"wrapped")
+    //GENOMECOLLECTOR.out.genomes_formatted_for_input.view()
+    PROKKA(
+        GENOMECOLLECTOR.out.genomes_formatted_for_input,
+        proteins,
+        prodigal_tf
+    )
 
     emit:
-    // TODO nf-core: edit emitted channels
-    bam      = SAMTOOLS_SORT.out.bam           // channel: [ val(meta), [ bam ] ]
-    bai      = SAMTOOLS_INDEX.out.bai          // channel: [ val(meta), [ bai ] ]
-    csi      = SAMTOOLS_INDEX.out.csi          // channel: [ val(meta), [ csi ] ]
-
-    versions = ch_versions                     // channel: [ versions.yml ]
+    gff      = PROKKA.out.gff       // GFF annotation files
+    gbk      = PROKKA.out.gbk       // GenBank format files
+    faa      = PROKKA.out.faa       // Predicted proteins
+    versions = PROKKA.out.versions  // Software version tracking
 }
-

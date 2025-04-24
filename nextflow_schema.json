@@ -205,6 +205,14 @@
             "type": "integer",
             "default": 14897628,
             "description": "Zenodo ID for the CheckM2 database"
+        },
+        "proteins": {
+            "type": "string",
+            "description": "A protein FASTA file to use for annotation"
+        },
+        "prodigal_tf": {
+            "type": "string",
+            "description": "A Prodigal translation table file"
         }
     }
 }

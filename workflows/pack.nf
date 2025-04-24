@@ -10,6 +10,7 @@ include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pi
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_pack_pipeline'
 include { QUALITY_CHECK_BY_CHECKM2 } from '../subworkflows/local/quality_check_by_checkm2'
+include { ANNOTATE_WITH_PROKKA } from '../subworkflows/local/annotate_with_prokka'
 
 
 /*
@@ -37,6 +38,39 @@ workflow PACK {
 
     // Merge version info from CheckM2-related processes
     ch_versions = ch_versions.mix(QUALITY_CHECK_BY_CHECKM2.out.versions)
+
+    // - Runs CheckM2 on all genomes together
+    // if file exists, pass it; else use null (handled cleanly)
+   
+    /*
+    ================================================================================
+    OPTIONAL INPUT HANDLING: Protein reference (--proteins) and prodigal_tf (--prodigal_tf)
+    If not supplied, pass empty lists instead of null to avoid breaking the module.
+    ================================================================================
+    */
+
+
+    // ch_proteins    = get_optional_input(params.proteins)
+    // ch_prodigal_tf = get_optional_input(params.prodigal_tf)
+    ch_proteins = params.proteins ? Channel.fromPath(params.proteins, checkIfExists: true) : Channel.of([])
+    ch_prodigal_tf = params.prodigal_tf ? Channel.fromPath(params.prodigal_tf, checkIfExists: true) : Channel.of([])
+
+    /*
+    ================================================================================
+    ANNOTATION: Run genome annotation using Prokka
+    ================================================================================
+    */
+    ANNOTATE_WITH_PROKKA(
+        genomes,
+        ch_proteins,
+        ch_prodigal_tf
+    )
+
+    // Merge version info from Prokka
+    ch_versions = ch_versions.mix(ANNOTATE_WITH_PROKKA.out.versions)
+
+    // Optional: View version info for debugging
+    ch_versions.view()
     // // Step 1: Download CheckM2 database
     // CHECKM2_DATABASEDOWNLOAD(params.checkm2_zenodo_id)
     // ch_checkm2_db = CHECKM2_DATABASEDOWNLOAD.out.database
@@ -142,7 +176,9 @@ workflow PACK {
     // versions       = ch_versions                 // channel: [ path(versions.yml) ]
 
 }
-
+    // def get_optional_input(path_str) {
+    //     return path_str ? Channel.fromPath(path_str, checkIfExists: true) : []
+    // }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     THE END
