@@ -31,48 +31,49 @@ workflow PACK {
     // - Downloads CheckM2 DB (once)
     // - Collects genome files into a merged input
     // - Runs CheckM2 on all genomes together
-    QUALITY_CHECK_BY_CHECKM2(
-        genomes,
-        params.checkm2_zenodo_id
-    )
+    if( !params.skip_checkm2 ) {
+        QUALITY_CHECK_BY_CHECKM2(
+            genomes,
+            params.checkm2_zenodo_id
+        )
 
-    // Merge version info from CheckM2-related processes
-    ch_versions = ch_versions.mix(QUALITY_CHECK_BY_CHECKM2.out.versions)
-
-    // - Runs CheckM2 on all genomes together
+        // Merge version info from CheckM2-related processes
+        ch_versions = ch_versions.mix(QUALITY_CHECK_BY_CHECKM2.out.versions)
+    }
+    // - Runs prokka on all genomes together
     // if file exists, pass it; else use null (handled cleanly)
-   
-    /*
-    ================================================================================
-    OPTIONAL INPUT HANDLING: Protein reference (--proteins) and prodigal_tf (--prodigal_tf)
-    If not supplied, pass empty lists instead of null to avoid breaking the module.
-    ================================================================================
-    */
+    if( !params.skip_prokka ) {
+        /*
+        ================================================================================
+        OPTIONAL INPUT HANDLING: Protein reference (--proteins) and prodigal_tf (--prodigal_tf)
+        If not supplied, pass empty lists instead of null to avoid breaking the module.
+        ================================================================================
+        */
 
 
-    // ch_proteins    = get_optional_input(params.proteins)
-    // ch_prodigal_tf = get_optional_input(params.prodigal_tf)
-    // Convert optional params to a channel that emits [] for every genome
-    ch_proteins = params.proteins ? Channel.fromPath(params.proteins, checkIfExists: true) : genomes.map { [] }
-    ch_prodigal_tf = params.prodigal_tf ? Channel.fromPath(params.prodigal_tf, checkIfExists: true) : genomes.map { [] }
-    // ch_proteins = params.proteins ? Channel.fromPath(params.proteins).map { [it] }.broadcast() : genomes.map { [] }
-    // ch_prodigal_tf = params.prodigal_tf ? Channel.fromPath(params.prodigal_tf).map { [it] }.broadcast() : genomes.map { [] }
+        // ch_proteins    = get_optional_input(params.proteins)
+        // ch_prodigal_tf = get_optional_input(params.prodigal_tf)
+        // Convert optional params to a channel that emits [] for every genome
+        ch_proteins = params.proteins ? Channel.fromPath(params.proteins, checkIfExists: true) : genomes.map { [] }
+        ch_prodigal_tf = params.prodigal_tf ? Channel.fromPath(params.prodigal_tf, checkIfExists: true) : genomes.map { [] }
+        // ch_proteins = params.proteins ? Channel.fromPath(params.proteins).map { [it] }.broadcast() : genomes.map { [] }
+        // ch_prodigal_tf = params.prodigal_tf ? Channel.fromPath(params.prodigal_tf).map { [it] }.broadcast() : genomes.map { [] }
 
-    
-    /*
-    ================================================================================
-    ANNOTATION: Run genome annotation using Prokka
-    ================================================================================
-    */
-    ANNOTATE_WITH_PROKKA(
-        genomes,
-        [],
-        []
-    )
+        
+        /*
+        ================================================================================
+        ANNOTATION: Run genome annotation using Prokka
+        ================================================================================
+        */
+        ANNOTATE_WITH_PROKKA(
+            genomes,
+            ch_proteins,
+            ch_prodigal_tf,
+        )
 
-    // Merge version info from Prokka
-    ch_versions = ch_versions.mix(ANNOTATE_WITH_PROKKA.out.versions)
-
+        // Merge version info from Prokka
+        ch_versions = ch_versions.mix(ANNOTATE_WITH_PROKKA.out.versions)
+    }
     // Optional: View version info for debugging
     // ch_versions.view()
     // // Step 1: Download CheckM2 database
