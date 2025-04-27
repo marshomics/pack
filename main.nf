@@ -73,9 +73,17 @@ workflow {
         exit 1, "❌ Please provide --input as a directory of genome FASTA files."
     }
 
-    MARSHOMICS_PACK (
-        Channel.fromPath("${params.input}/*.{fa,fna,fasta,fa.gz,fna.gz,fasta.gz}", checkIfExists: true)
-    )
+    if (params.input ==~ /.*\*+.*/) {
+            // If user gave wildcard input (e.g., 'genomes/*.fna.gz'), use directly
+            ch_input_files = Channel.fromPath(params.input, checkIfExists: true)
+        } else {
+            // Otherwise assume it's a directory, and expand manually
+            ch_input_files = Channel.fromPath("${params.input}/*.{fa,fna,fasta,fa.gz,fna.gz,fasta.gz}", checkIfExists: true)
+        }
+
+
+    MARSHOMICS_PACK(ch_input_files)
+
     //
     // WORKFLOW: Run main workflow
     //

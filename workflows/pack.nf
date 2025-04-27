@@ -10,7 +10,8 @@ include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pi
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_pack_pipeline'
 include { QUALITY_CHECK_BY_CHECKM2 } from '../subworkflows/local/quality_check_by_checkm2'
-include { ANNOTATE_WITH_PROKKA } from '../subworkflows/local/annotate_with_prokka'
+include { ANNOTATE_WITH_PROKKA   } from '../subworkflows/local/annotate_with_prokka'
+include { CLASSIFY_WITH_GTDBTK   } from '../subworkflows/local/classify_with_gtdbtk'
 
 
 /*
@@ -31,6 +32,7 @@ workflow PACK {
     // - Downloads CheckM2 DB (once)
     // - Collects genome files into a merged input
     // - Runs CheckM2 on all genomes together
+    genomes.view()
     if( !params.skip_checkm2 ) {
         QUALITY_CHECK_BY_CHECKM2(
             genomes,
@@ -74,6 +76,12 @@ workflow PACK {
         // Merge version info from Prokka
         ch_versions = ch_versions.mix(ANNOTATE_WITH_PROKKA.out.versions)
     }
+
+    // CLASSIFY_WITH_GTDBTK(
+    //     genomes,
+    //     params.gtdbtk_db
+
+    // )
     // Optional: View version info for debugging
     // ch_versions.view()
     // // Step 1: Download CheckM2 database

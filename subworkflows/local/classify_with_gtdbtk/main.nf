@@ -1,7 +1,8 @@
 // Subworkflow: CLASSIFY_WITH_GTDBTK
 
 include { GTDBTK_CLASSIFYWF } from '../../../modules/nf-core/gtdbtk/classifywf'
-include { GTDBDATABASEDOWNLOAD } from '../../../modules/local/gtdbdatabasedownload' // You must create this module
+//include { GTDBDATABASEDOWNLOAD } from '../../../modules/local/gtdbdatabasedownload' // You must create this module
+include { GENOMECOLLECTOR } from '../../local/utils_nfcore_pack_pipeline'
 
 workflow CLASSIFY_WITH_GTDBTK {
 
@@ -11,20 +12,18 @@ workflow CLASSIFY_WITH_GTDBTK {
 
     main:
     // Decide whether to download or use provided DB
-    db_channel = db_path ? Channel.fromPath(db_path, checkIfExists: true) : GTDBDATABASEDOWNLOAD()
+    db_channel = db_path ? Channel.of(["gtdbtk_db", file(db_path)]) : GTDBDATABASEDOWNLOAD()
 
     // Merge bins into one directory for classify_wf
-    bins.collectFile(name: "bins.tar.gz", storeDir: "bins")
-        .ifEmpty { error "No genome bins found." }
-        .unpack()
-        .map { path ->
-            def meta = [id: "all_bins"]
-            tuple(meta, path)
-        }
-        .set { ch_bins }
-
+    // STEP 2: Collect all genome files into one merged list with shared metadata
+    GENOMECOLLECTOR(bins,"merged")
+    ch_bins_dir = bins.collect()
+    .map { paths ->
+        def meta = [ id: 'all_genomes' ]
+        tuple(meta, 'bins')
+    }
     GTDBTK_CLASSIFYWF(
-        ch_bins,
+        ch_bins_dir,
         db_channel,
         false,       // use_pplacer_scratch_dir (optional)
         []           // mash_db optional empty
@@ -38,7 +37,7 @@ workflow CLASSIFY_WITH_GTDBTK {
     user_msa = GTDBTK_CLASSIFYWF.out.user_msa
     filtered = GTDBTK_CLASSIFYWF.out.filtered
     failed  = GTDBTK_CLASSIFYWF.out.failed
-    log     = GTDBTK_CLASSIFYWF.out.log
+    //log     = GTDBTK_CLASSIFYWF.out.log
     warnings = GTDBTK_CLASSIFYWF.out.warnings
     versions = GTDBTK_CLASSIFYWF.out.versions
 }

@@ -1,14 +1,14 @@
 // TODO nf-core: Once you have added the required tests, please run the following command to build this file:
-// nf-core subworkflows test classify_with_gtdb
+// nf-core subworkflows test classify_with_gtdbtk
 nextflow_workflow {
 
-    name "Test Subworkflow CLASSIFY_WITH_GTDB"
+    name "Test Subworkflow CLASSIFY_WITH_GTDBTK"
     script "../main.nf"
-    workflow "CLASSIFY_WITH_GTDB"
+    workflow "CLASSIFY_WITH_GTDBTK"
 
     tag "subworkflows"
     tag "subworkflows_"
-    tag "subworkflows/classify_with_gtdb"
+    tag "subworkflows/classify_with_gtdbtk"
     // TODO nf-core: Add tags for all modules used within this subworkflow. Example:
     tag "samtools"
     tag "samtools/sort"
