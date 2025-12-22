@@ -77,11 +77,11 @@ workflow PACK {
         ch_versions = ch_versions.mix(ANNOTATE_WITH_PROKKA.out.versions)
     }
 
-    // CLASSIFY_WITH_GTDBTK(
-    //     genomes,
-    //     params.gtdbtk_db
+    CLASSIFY_WITH_GTDBTK(
+        genomes,
+        params.gtdbtk_db
 
-    // )
+    )
     // Optional: View version info for debugging
     // ch_versions.view()
     // // Step 1: Download CheckM2 database
