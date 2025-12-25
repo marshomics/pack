@@ -17,28 +17,38 @@ workflow CLASSIFY_WITH_GTDBTK {
     // Merge bins into one directory for classify_wf
     // STEP 2: Collect all genome files into one merged list with shared metadata
 // Step 2: Merge bins per genome
-    GENOMECOLLECTOR(bins, "wrapped")
-
+    GENOMECOLLECTOR(bins,"merged")
+    // GENOMECOLLECTOR.out.genomes_formatted_for_input.view()   
+    // GENOMECOLLECTOR(bins,"wrapped") 
     // Step 3: Group bins together by sample
-    GENOMECOLLECTOR.out.genomes_formatted_for_input
-        .map { meta, bin -> [meta, bin] }
-        .groupTuple()
-        .map { meta, bins -> 
-            def bin_dir = file("bins")
-            """
-            mkdir -p bins
-            ${bins.collect{ "ln -s ${it} bins/" }.join('\n')}
-            """
-            tuple(meta, bin_dir)
-        }
-        .set { ch_binned_genomes }
+
+    // GENOMECOLLECTOR.out.genomes_formatted_for_input
+    // .map { meta, genome -> genome }          // keep only file paths
+    // .collect()                               // -> [file1, file2, ...]
+    // .map { genomes -> tuple([id:'all_genomes'], genomes) }
+    // .set { ch_binned_genomes }
+
+    // ch_binned_genomes.view()
+    // GENOMECOLLECTOR.out.genomes_formatted_for_input
+        // .map { meta, bin -> [meta, bin] }
+        // .groupTuple()
+        // .map { meta, bins -> 
+        //     def bin_dir = file("bins")
+        //     """
+        //     mkdir -p bins
+        //     ${bins.collect{ "ln -s ${it} bins/" }.join('\n')}
+        //     """
+        //     tuple(meta, bin_dir)
+        // }
+        // .set { ch_binned_genomes }
     // ch_bins_dir = bins.collect()
     // .map { paths ->
     //     def meta = [ id: 'all_genomes' ]
     //     tuple(meta, 'bins')
     // }
     GTDBTK_CLASSIFYWF(
-        ch_binned_genomes,
+        GENOMECOLLECTOR.out.genomes_formatted_for_input,
+        // ch_binned_genomes,
         db_channel,
         false,       // use_pplacer_scratch_dir (optional)
         []           // mash_db optional empty

@@ -33,7 +33,7 @@ workflow PACK {
     // - Downloads CheckM2 DB (once)
     // - Collects genome files into a merged input
     // - Runs CheckM2 on all genomes together
-    genomes.view()
+    //genomes.view()
     if( !params.skip_checkm2 ) {
         QUALITY_CHECK_BY_CHECKM2(
             genomes,
@@ -74,15 +74,18 @@ workflow PACK {
             ch_prodigal_tf,
         )
 
-        // Merge version info from Prokka
+        // Merge version info from Prokkals
+        
         ch_versions = ch_versions.mix(ANNOTATE_WITH_PROKKA.out.versions)
     }
 
-    CLASSIFY_WITH_GTDBTK(
-        genomes,
-        params.gtdbtk_db
+    if( !params.skip_gtdbtk ) { 
+        CLASSIFY_WITH_GTDBTK(
+                genomes,
+                params.gtdbtk_db
 
-    )
+         )
+    }
     // Optional: View version info for debugging
     // ch_versions.view()
     // // Step 1: Download CheckM2 database

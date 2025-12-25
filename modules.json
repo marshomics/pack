@@ -7,7 +7,7 @@
                 "nf-core": {
                     "checkm2/databasedownload": {
                         "branch": "master",
-                        "git_sha": "05954dab2ff481bcb999f24455da29a5828af08d",
+                        "git_sha": "bcba09053293bbc4fcfecbe094af6d0127f2e0ec",
                         "installed_by": ["modules"]
                     },
                     "checkm2/predict": {

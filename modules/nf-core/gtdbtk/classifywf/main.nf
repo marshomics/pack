@@ -6,6 +6,7 @@ process GTDBTK_CLASSIFYWF {
 
     input:
     tuple val(meta), path("bins/*")
+    //tuple val(meta), path(genomes, stageAs: 'bins/*')
     tuple val(db_name), path(db)
     val use_pplacer_scratch_dir
     path mash_db
@@ -43,6 +44,7 @@ process GTDBTK_CLASSIFYWF {
         --genome_dir bins \\
         --prefix "gtdbtk.${prefix}" \\
         --out_dir "\${PWD}" \\
+        --extension fna.gz\\
         --cpus ${task.cpus} \\
         ${mash_mode} \\
         ${pplacer_scratch}

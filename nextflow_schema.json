@@ -225,6 +225,10 @@
         "gtdbtk_db": {
             "type": "string",
             "description": "Provide the path to the already downloaded GTDB database folder"
+        },
+        "skip_gtdbtk": {
+            "type": "boolean",
+            "description": "A Boolean flag to control whether the gtdbtk step is skipped"
         }
     }
 }
