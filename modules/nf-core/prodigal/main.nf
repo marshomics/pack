@@ -23,7 +23,7 @@ process PRODIGAL {
 
     script:
     def args = task.ext.args   ?: ''
-    prefix   = task.ext.prefix ?: "${meta.id}"
+    prefix   = task.ext.prefix ?: "${meta.id}.prodigal"
     """
     pigz -cdf ${genome} | prodigal \\
         $args \\

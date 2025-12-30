@@ -229,6 +229,15 @@
         "skip_gtdbtk": {
             "type": "boolean",
             "description": "A Boolean flag to control whether the gtdbtk step is skipped"
+        },
+        "skip_prodigal": {
+            "type": "boolean",
+            "description": "A Boolean flag to control whether the prodigal step is skipped"
+        },
+        "prodigal_format": {
+            "type": "string",
+            "default": "gff",
+            "description": "A Prodigal flag to control output format"
         }
     }
 }

@@ -12,7 +12,8 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_pack
 include { QUALITY_CHECK_BY_CHECKM2 } from '../subworkflows/local/quality_check_by_checkm2'
 include { ANNOTATE_WITH_PROKKA   } from '../subworkflows/local/annotate_with_prokka'
 include { CLASSIFY_WITH_GTDBTK   } from '../subworkflows/local/classify_with_gtdbtk'
-include { PRODIGAL               } from '../modules/nf-core/prodigal/main'
+include { RUN_PRODIGAL           } from '../subworkflows/local/gene_finding_by_prodigal'
+
 
 
 /*
@@ -34,6 +35,14 @@ workflow PACK {
     // - Collects genome files into a merged input
     // - Runs CheckM2 on all genomes together
     //genomes.view()
+
+    RUN_PRODIGAL(
+            genomes,
+            params.prodigal_format
+        )
+
+
+
     if( !params.skip_checkm2 ) {
         QUALITY_CHECK_BY_CHECKM2(
             genomes,
