@@ -5,6 +5,7 @@
 */
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
+include { DEFENSEFINDER_UPDATE   } from '../modules/local/defensefinder/update'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -95,6 +96,8 @@ workflow PACK {
 
          )
     }
+    def df_models = params.defensefinder_models ? file(params.defensefinder_models) : []
+    DEFENSEFINDER_UPDATE(df_models)
     // Optional: View version info for debugging
     // ch_versions.view()
     // // Step 1: Download CheckM2 database

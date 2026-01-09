@@ -238,6 +238,10 @@
             "type": "string",
             "default": "gff",
             "description": "A Prodigal flag to control output format"
+        },
+        "defensefinder_models_dir": {
+            "type": "string",
+            "description": "Provide the path to the already downloaded defensefinder model directory"
         }
     }
 }
