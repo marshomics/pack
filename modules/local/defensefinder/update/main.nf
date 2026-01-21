@@ -18,7 +18,6 @@ process DEFENSEFINDER_UPDATE {
     input:
     // ✅ If not provided, pass [] from workflow (see below)
     // ✅ If provided, it will be staged as ./user_models (no name collision with output)
-    input:
     path user_models, stageAs: 'user_models'
 
     output:
@@ -33,6 +32,9 @@ process DEFENSEFINDER_UPDATE {
 
     """
     set -euo pipefail
+
+    # Ensure DefenseFinder/macsydata can write user files
+    export HOME="\$PWD"
 
     # Always emit a stable directory name for downstream modules
     mkdir -p models
@@ -55,12 +57,16 @@ process DEFENSEFINDER_UPDATE {
         cp -R "${user_models}/defense-finder-models" models/
 
     else
-        echo "No user models provided -> downloading with defense-finder update"
+        echo "No user models provided -> installing pinned models with macsydata"
         mkdir -p models_tmp
 
-        defense-finder update \\
-            ${args} \\
-            --models-dir models_tmp
+        # defense-finder update \\
+        #     ${args} \\
+        #     --models-dir models_tmp
+
+        # Install versions compatible with DefenseFinder 2.0.1
+        macsydata install --target models_tmp  --org mdmparis defense-finder-models==2.0.2
+        macsydata install --target models_tmp CasFinder==3.1.0
 
         # Normalize to output name
         rm -rf models

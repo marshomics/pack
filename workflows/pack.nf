@@ -5,7 +5,6 @@
 */
 include { FASTQC                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
-include { DEFENSEFINDER_UPDATE   } from '../modules/local/defensefinder/update'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -14,6 +13,7 @@ include { QUALITY_CHECK_BY_CHECKM2 } from '../subworkflows/local/quality_check_b
 include { ANNOTATE_WITH_PROKKA   } from '../subworkflows/local/annotate_with_prokka'
 include { CLASSIFY_WITH_GTDBTK   } from '../subworkflows/local/classify_with_gtdbtk'
 include { RUN_PRODIGAL           } from '../subworkflows/local/gene_finding_by_prodigal'
+include { DEFENSEFINDER_PIPELINE } from '../subworkflows/local/defensefinder_pipeline'
 
 
 
@@ -69,6 +69,9 @@ workflow PACK {
         // Convert optional params to a channel that emits [] for every genome
         ch_proteins = params.proteins ? Channel.fromPath(params.proteins, checkIfExists: true) : genomes.map { [] }
         ch_prodigal_tf = params.prodigal_tf ? Channel.fromPath(params.prodigal_tf, checkIfExists: true) : genomes.map { [] }
+        // ch_proteins    = params.proteins    ? Channel.fromPath(params.proteins, checkIfExists: true) : Channel.value([])
+        // ch_prodigal_tf = params.prodigal_tf ? Channel.fromPath(params.prodigal_tf, checkIfExists: true) : Channel.value([])
+
         // ch_proteins = params.proteins ? Channel.fromPath(params.proteins).map { [it] }.broadcast() : genomes.map { [] }
         // ch_prodigal_tf = params.prodigal_tf ? Channel.fromPath(params.prodigal_tf).map { [it] }.broadcast() : genomes.map { [] }
 
@@ -97,7 +100,7 @@ workflow PACK {
          )
     }
     def df_models = params.defensefinder_models ? file(params.defensefinder_models) : []
-    DEFENSEFINDER_UPDATE(df_models)
+    df = DEFENSEFINDER_PIPELINE(genomes, df_models)
     // Optional: View version info for debugging
     // ch_versions.view()
     // // Step 1: Download CheckM2 database
