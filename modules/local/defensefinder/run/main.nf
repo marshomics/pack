@@ -14,8 +14,8 @@ process DEFENSEFINDER_RUN {
     path models_dir
 
     output:
-    tuple val(meta), path("defense_finder"), emit: results
-    path "versions.yml"              , emit: versions
+    tuple val(meta), path("defense_finder/${meta.id}"), emit: results
+    path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -27,7 +27,7 @@ process DEFENSEFINDER_RUN {
     """
     set -euo pipefail
     export HOME="$PWD"
-    mkdir -p defense_finder
+    mkdir -p defense_finder/${meta.id}
     mkdir -p macsy_index
 
     echo "Running DefenseFinder on: ${fasta}"
@@ -43,7 +43,7 @@ process DEFENSEFINDER_RUN {
         ${args} \\
         --models-dir "${models_dir}" \\
         --index-dir macsy_index \\
-        -o defense_finder \\
+        -o defense_finder/${meta.id} \\
         "${fasta}"
 
     cat <<-END_VERSIONS > versions.yml
