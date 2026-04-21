@@ -1,6 +1,6 @@
 
 
-**Hi James,**
+**Hi All,**
 just a heads-up — all the pushes are on the template branch.
 
 
