@@ -99,8 +99,12 @@ workflow PACK {
 
          )
     }
+
+    if ( !params.skip_defensefinder ) { 
     def df_models = params.defensefinder_models ? file(params.defensefinder_models) : []
     df = DEFENSEFINDER_PIPELINE(genomes, df_models)
+             
+    }
     // Optional: View version info for debugging
     // ch_versions.view()
     // // Step 1: Download CheckM2 database
