@@ -1,91 +1,94 @@
-// TODO nf-core: If in doubt look at other nf-core/modules to see how we are doing things! :)
-//               https://github.com/nf-core/modules/tree/master/modules/nf-core/
-//               You can also ask for help via your pull request or on the #modules channel on the nf-core Slack workspace:
-//               https://nf-co.re/join
-// TODO nf-core: A module file SHOULD only define input and output files as command-line parameters.
-//               All other parameters MUST be provided using the "task.ext" directive, see here:
-//               https://www.nextflow.io/docs/latest/process.html#ext
-//               where "task.ext" is a string.
-//               Any parameters that need to be evaluated in the context of a particular sample
-//               e.g. single-end/paired-end data MUST also be defined and evaluated appropriately.
-// TODO nf-core: Software that can be piped together SHOULD be added to separate module files
-//               unless there is a run-time, storage advantage in implementing in this way
-//               e.g. it's ok to have a single module for bwa to output BAM instead of SAM:
-//                 bwa mem | samtools view -B -T ref.fasta
-// TODO nf-core: Optional inputs are not currently supported by Nextflow. However, using an empty
-//               list (`[]`) instead of a file can be used to work around this issue.
-
 process DNAMETHYLASEFINDER_DOWNLOAD {
-    tag "$meta.id"
+
+    tag "dna_methylase_finder_db"
     label 'process_single'
 
-    // TODO nf-core: List required Conda package(s).
-    //               Software MUST be pinned to channel (i.e. "bioconda"), version (i.e. "1.10").
-    //               For Conda, the build (i.e. "h9402c20_2") must be EXCLUDED to support installation on different operating systems.
-    // TODO nf-core: See section in main README for further information regarding finding and adding container addresses to the section below.
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/YOUR-TOOL-HERE':
-        'biocontainers/YOUR-TOOL-HERE' }"
+        'https://depot.galaxyproject.org/singularity/gnu-wget:1.18--h5bf99c6_5' :
+        'biocontainers/gnu-wget:1.18--h5bf99c6_5' }"
 
+    /*
+     * Optional input (same pattern as DEFENSEFINDER_UPDATE):
+     *  - If the workflow passes [] then user did not supply a DB -> download it
+     *  - If it passes a directory, validate and use it
+     */
     input:
-    // TODO nf-core: Where applicable all sample-specific information e.g. "id", "single_end", "read_group"
-    //               MUST be provided as an input via a Groovy Map called "meta".
-    //               This information may not be required in some instances e.g. indexing reference genome files:
-    //               https://github.com/nf-core/modules/blob/master/modules/nf-core/bwa/index/main.nf
-    // TODO nf-core: Where applicable please provide/convert compressed files as input/output
-    //               e.g. "*.fastq.gz" and NOT "*.fastq", "*.bam" and NOT "*.sam" etc.
-    tuple val(meta), path(bam)
+    path user_db, stageAs: 'user_db'
 
     output:
-    // TODO nf-core: Named file extensions MUST be emitted for ALL output channels
-    tuple val(meta), path("*.bam"), emit: bam
-    // TODO nf-core: List additional required output channels/values here
+    path "dna_methylase_finder_db", emit: db
     path "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    // TODO nf-core: Where possible, a command MUST be provided to obtain the version number of the software e.g. 1.10
-    //               If the software is unable to output a version number on the command-line then it can be manually specified
-    //               e.g. https://github.com/nf-core/modules/blob/master/modules/nf-core/homer/annotatepeaks/main.nf
-    //               Each software used MUST provide the software name and version number in the YAML version file (versions.yml)
-    // TODO nf-core: It MUST be possible to pass additional parameters to the tool as a command-line string via the "task.ext.args" directive
-    // TODO nf-core: If the tool supports multi-threading then you MUST provide the appropriate parameter
-    //               using the Nextflow "task" variable e.g. "--threads $task.cpus"
-    // TODO nf-core: Please replace the example samtools command below with your module's command
-    // TODO nf-core: Please indent the command appropriately (4 spaces!!) to help with readability ;)
+    def args   = task.ext.args   ?: ''
+    // URL of the DB tarball on your GitHub release. Override in conf/modules.config via ext.args2.
+    def db_url = task.ext.args2 ?: 'https://zenodo.org/record/6647341/files/DNA_methylase_finder_DBS_v1.0.tar.gz'
+    // The six subdirectories every valid methylase DB must contain
+    def expected = 'cdd_plus_hmms methylase_hmms motif_protein_blastp restriction_enzyme_hmms specificity_subunit_hmms subtype_hmms'
     """
-    samtools \\
-        sort \\
-        $args \\
-        -@ $task.cpus \\
-        -o ${prefix}.bam \\
-        -T $prefix \\
-        $bam
+    set -euo pipefail
+
+    # Always emit a stable directory name for downstream modules
+    mkdir -p dna_methylase_finder_db
+
+    if [ -n "${user_db}" ] && [ "${user_db}" != "[]" ] && [ -e "${user_db}" ]; then
+        echo "Using user-provided DNA methylase finder DB directory: ${user_db}"
+
+        # Validate: every expected subfolder must be present
+        for d in ${expected}; do
+            if [ ! -d "${user_db}/\$d" ]; then
+                echo "ERROR: Provided DB directory does not look like a DNA_methylase_finder DB."
+                echo "Missing expected subfolder: \$d"
+                echo "Got:"
+                ls -la "${user_db}" || true
+                exit 1
+            fi
+        done
+
+        # Copy each expected subfolder into the stable output dir
+        for d in ${expected}; do
+            cp -R "${user_db}/\$d" dna_methylase_finder_db/
+        done
+
+    else
+        echo "No user DB provided -> downloading from GitHub release"
+
+        wget ${args} -O DNA_methylase_finder_DBS.tar.gz "${db_url}"
+
+        # Tarball has NO top-level wrapper folder: the six dirs sit at the archive root.
+        # Extract straight into dna_methylase_finder_db/
+        tar -xzf DNA_methylase_finder_DBS.tar.gz -C dna_methylase_finder_db
+        rm DNA_methylase_finder_DBS.tar.gz
+
+        # Sanity check the extraction
+        for d in ${expected}; do
+            if [ ! -d "dna_methylase_finder_db/\$d" ]; then
+                echo "ERROR: Download extracted but expected subfolder missing: \$d"
+                ls -la dna_methylase_finder_db || true
+                exit 1
+            fi
+        done
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        dnamethylasefinder: \$(samtools --version |& sed '1!d ; s/samtools //')
+        wget: \$(wget --version | head -n1 | sed 's/GNU Wget //; s/ .*//')
     END_VERSIONS
     """
 
     stub:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    // TODO nf-core: A stub section should mimic the execution of the original module as best as possible
-    //               Have a look at the following examples:
-    //               Simple example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bcftools/annotate/main.nf#L47-L63
-    //               Complex example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bedtools/split/main.nf#L38-L54
     """
-    touch ${prefix}.bam
+    mkdir -p dna_methylase_finder_db/cdd_plus_hmms dna_methylase_finder_db/methylase_hmms dna_methylase_finder_db/motif_protein_blastp
+    mkdir -p dna_methylase_finder_db/restriction_enzyme_hmms dna_methylase_finder_db/specificity_subunit_hmms dna_methylase_finder_db/subtype_hmms
+    touch dna_methylase_finder_db/.stub_db
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        dnamethylasefinder: \$(samtools --version |& sed '1!d ; s/samtools //')
+        wget: "stub"
     END_VERSIONS
     """
 }

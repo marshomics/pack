@@ -3,18 +3,18 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { FASTQC                 } from '../modules/nf-core/fastqc/main'
-include { MULTIQC                } from '../modules/nf-core/multiqc/main'
-include { paramsSummaryMap       } from 'plugin/nf-schema'
-include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_pack_pipeline'
-include { QUALITY_CHECK_BY_CHECKM2 } from '../subworkflows/local/quality_check_by_checkm2'
-include { ANNOTATE_WITH_PROKKA   } from '../subworkflows/local/annotate_with_prokka'
-include { CLASSIFY_WITH_GTDBTK   } from '../subworkflows/local/classify_with_gtdbtk'
-include { RUN_PRODIGAL           } from '../subworkflows/local/gene_finding_by_prodigal'
-include { DEFENSEFINDER_PIPELINE } from '../subworkflows/local/defensefinder_pipeline'
-
+include { FASTQC                      } from '../modules/nf-core/fastqc/main'
+include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
+include { paramsSummaryMap            } from 'plugin/nf-schema'
+include { paramsSummaryMultiqc        } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { softwareVersionsToYAML      } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { methodsDescriptionText      } from '../subworkflows/local/utils_nfcore_pack_pipeline'
+include { QUALITY_CHECK_BY_CHECKM2    } from '../subworkflows/local/quality_check_by_checkm2'
+include { ANNOTATE_WITH_PROKKA        } from '../subworkflows/local/annotate_with_prokka'
+include { CLASSIFY_WITH_GTDBTK        } from '../subworkflows/local/classify_with_gtdbtk'
+include { RUN_PRODIGAL                } from '../subworkflows/local/gene_finding_by_prodigal'
+include { DEFENSEFINDER_PIPELINE      } from '../subworkflows/local/defensefinder_pipeline'
+include { DNAMETHYLASEFINDER_PIPELINE } from '../subworkflows/local/dnamethylasefinder_pipeline'
 
 
 /*
@@ -37,11 +37,11 @@ workflow PACK {
     // - Runs CheckM2 on all genomes together
     //genomes.view()
 
-    RUN_PRODIGAL(
+    if( !params.skip_prodigal) {RUN_PRODIGAL(
             genomes,
             params.prodigal_format
         )
-
+    }
 
 
     if( !params.skip_checkm2 ) {
@@ -105,6 +105,14 @@ workflow PACK {
     df = DEFENSEFINDER_PIPELINE(genomes, df_models)
              
     }
+
+    
+
+DNAMETHYLASEFINDER_PIPELINE(
+    params.dmf_db ? file(params.dmf_db, checkIfExists: true) : []
+)
+
+ch_dmf_db = DNAMETHYLASEFINDER_PIPELINE.out.db_dir
     // Optional: View version info for debugging
     // ch_versions.view()
     // // Step 1: Download CheckM2 database
